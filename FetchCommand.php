@@ -51,9 +51,11 @@ class FetchCommand extends Command
         ];
 
         $current = new \DateTime('-2 DAYS');
-        $earliest = new \DateTime('2010-01-01');
 
-        while ($current > $earliest) {
+        // https://api.crossref.org/works?filter=type:journal-article&sort=deposited&order=asc&rows=1
+        $earliest = new \DateTime('2007-02-13');
+
+        while ($current >= $earliest) {
             $date = $current->format('Y-m-d');
 
             $outputFile = $outputDir . '/' . $date . '.json';
@@ -66,8 +68,8 @@ class FetchCommand extends Command
 
             $filters = [
                 'type' => 'journal-article',
-                'from-index-date' => $date,
-                'until-index-date' => $date,
+                'from-deposit-date' => $date,
+                'until-deposit-date' => $date,
             ];
 
             $filter = implode(',', array_map(function ($key) use ($filters) {
@@ -85,7 +87,7 @@ class FetchCommand extends Command
 
             do {
                 $response = $client->get('https://api.crossref.org/works', [
-                    //'debug' => true,
+                    'debug' => true,
                     'connect_timeout' => 10,
                     'timeout' => 120,
                     'query' => $params,
