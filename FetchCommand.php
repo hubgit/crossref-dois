@@ -88,7 +88,7 @@ class FetchCommand extends Command
 
             do {
                 $response = $client->get('https://api.crossref.org/works', [
-                    'debug' => true,
+                    //'debug' => true,
                     'connect_timeout' => 10,
                     'timeout' => 120,
                     'query' => $params,
