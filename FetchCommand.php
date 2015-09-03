@@ -50,6 +50,7 @@ class FetchCommand extends Command
             'User-Agent' => 'crossref-dois/0.1 (+https://github.com/hubgit/crossref-dois/)',
         ];
 
+        // start from 2 days ago, to be sure it's complete
         $current = new \DateTime('-2 DAYS');
 
         // https://api.crossref.org/works?filter=type:journal-article&sort=deposited&order=asc&rows=1
@@ -60,9 +61,9 @@ class FetchCommand extends Command
 
             $outputFile = $outputDir . '/' . $date . '.json';
 
-            //    if (file_exists($outputFile) && filesize($outputFile)) {
-            //        break;
-            //    }
+            if (file_exists($outputFile) && filesize($outputFile)) {
+              break;
+            }
 
             $outputHandle = fopen($outputFile, 'w');
 
