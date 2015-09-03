@@ -1,0 +1,14 @@
+{
+    "name": "hubgit/crossref-dois",
+    "description": "Fetch all DOIs from CrossRef",
+    "require": {
+        "guzzlehttp/guzzle": "~6.0",
+        "symfony/console": "~2.7"
+    },
+    "authors": [
+        {
+            "name": "Alf Eaton",
+            "email": "eaton.alf@gmail.com"
+        }
+    ]
+}
