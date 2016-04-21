@@ -44,7 +44,7 @@ class FetchCommand extends Command
     protected function fetch($outputDir, OutputInterface $output)
     {
         $client = new Client([
-          'debug' => true
+          //'debug' => true
         ]);
 
         $headers = [
