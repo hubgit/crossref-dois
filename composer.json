@@ -3,7 +3,7 @@
     "description": "Fetch all DOIs from CrossRef",
     "require": {
         "guzzlehttp/guzzle": "~6.0",
-        "symfony/console": "~2.7"
+        "symfony/console": "~3.0"
     },
     "authors": [
         {

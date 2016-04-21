@@ -14,7 +14,8 @@ class FetchCommand extends Command
     public function configure()
     {
         $this->setName('crossref:fetch')
-            ->addArgument('output');
+            ->addArgument('output')
+            ->setDescription('Fetch all journal article metadata from Crossref');
     }
 
     /**
@@ -42,7 +43,9 @@ class FetchCommand extends Command
      */
     protected function fetch($outputDir, OutputInterface $output)
     {
-        $client = new Client;
+        $client = new Client([
+          'debug' => true
+        ]);
 
         $headers = [
             'Accept' => 'application/json',
