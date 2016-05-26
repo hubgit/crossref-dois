@@ -26,23 +26,9 @@ class FetchCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $outputDir = $input->getArgument('output');
+        $outputFile = $input->getArgument('output');
+        $outputHandle = fopen($outputFile, 'w');
 
-        if (!file_exists($outputDir)) {
-            mkdir($outputDir, 0775, true);
-        }
-
-        $this->fetch($outputDir,$output);
-    }
-
-    /**
-     * @param string          $outputDir
-     * @param OutputInterface $output
-     *
-     * @throws Exception
-     */
-    protected function fetch($outputDir, OutputInterface $output)
-    {
         $client = new Client([
           //'debug' => true
         ]);
@@ -53,76 +39,53 @@ class FetchCommand extends Command
             'User-Agent' => 'crossref-dois/0.1 (+https://github.com/hubgit/crossref-dois/)',
         ];
 
-        // start from 2 days ago, to be sure it's complete
-        $current = new \DateTime('-2 DAYS');
+        // https://api.crossref.org/works?filter=type:journal-article&cursor=*
 
-        // https://api.crossref.org/works?filter=type:journal-article&sort=deposited&order=asc&rows=1
-        $earliest = new \DateTime('2007-02-13');
+        $filters = [
+            'type' => 'journal-article'
+        ];
 
-        while ($current >= $earliest) {
-            $date = $current->format('Y-m-d');
+        $filter = implode(',', array_map(function ($key) use ($filters) {
+            return $key . ':' . $filters[$key];
+        }, array_keys($filters)));
 
-            $outputFile = $outputDir . '/' . $date . '.json';
+        $params = [
+            'filter' => $filter,
+            'cursor' => '*',
+            'rows' => 1000,
+        ];
 
-            if (file_exists($outputFile) && filesize($outputFile)) {
-              break;
+        $progress = new ProgressBar($output);
+        $progressStarted = false;
+
+        do {
+            $response = $client->get('https://api.crossref.org/works', [
+                //'debug' => true,
+                'connect_timeout' => 10,
+                'timeout' => 120,
+                'query' => $params,
+                'headers' => $headers,
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+
+            if (!$progressStarted) {
+              $progress->start($data['message']['total-results']);
+              $progressStarted = true;
             }
 
-            $outputHandle = fopen($outputFile, 'w');
+            $items = $this->parseResponse($data);
 
-            $filters = [
-                'type' => 'journal-article',
-                'from-deposit-date' => $date,
-                'until-deposit-date' => $date,
-            ];
+            foreach ($items as $item) {
+                fwrite($outputHandle, json_encode($item) . "\n");
+            }
 
-            $filter = implode(',', array_map(function ($key) use ($filters) {
-                return $key . ':' . $filters[$key];
-            }, array_keys($filters)));
+            $params['cursor'] = $data['message']['next-cursor'];
 
-            $params = [
-                'filter' => $filter,
-                'rows' => 1000,
-                'offset' => 0,
-            ];
+            $progress->advance(count($items));
+        } while ($params['cursor']);
 
-            $output->writeLn('');
-            $output->writeln(sprintf('Fetching journal article DOIs deposited on %s', $date));
-
-            do {
-                $response = $client->get('https://api.crossref.org/works', [
-                    //'debug' => true,
-                    'connect_timeout' => 10,
-                    'timeout' => 120,
-                    'query' => $params,
-                    'headers' => $headers,
-                ]);
-
-                $data = json_decode($response->getBody(), true);
-
-                $total = $data['message']['total-results'];
-
-                $items = $this->parseResponse($data);
-
-                if ($params['offset'] === 0) {
-                    $progress = new ProgressBar($output, $total);
-                    $progress->start();
-                }
-
-                foreach ($items as $item) {
-                    fwrite($outputHandle, json_encode($item) . "\n");
-                }
-
-                $params['offset'] += $params['rows'];
-
-                $progress->setProgress($params['offset']);
-
-            } while ($params['offset'] <= $total);
-
-            $progress->finish();
-
-            $current->modify('-1 DAY');
-        }
+        $progress->finish();
     }
 
     /**
